@@ -221,7 +221,12 @@ backup "$HOME/.tmux.conf"
 cat << 'EOF' > "$HOME/.tmux.conf"
 # ---- General ----
 set -g mouse on
-set -s escape-time 10                     # fixes ^[[>0;10;1c bleed
+# escape-time must exceed the round trip, or the terminal's reply to tmux's
+# device-attributes query (^[[?61;...c ^[[>0;10;1c) leaks into the shell.
+# Local: 10ms is plenty. Over SSH: allow for network latency.
+if-shell '[ -n "$SSH_CONNECTION" ]' \
+    'set -s escape-time 150' \
+    'set -s escape-time 10'
 set -g default-terminal "tmux-256color"
 set -ga terminal-overrides ",*256col*:Tc" # truecolor passthrough
 set -g default-shell "$SHELL"
